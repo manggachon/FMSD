@@ -1,0 +1,19 @@
+version: '3.9'
+
+# Development-only: starts only postgres
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: asios_db_dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: asios_fleet
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+volumes:
+  postgres_dev_data:
