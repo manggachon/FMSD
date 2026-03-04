@@ -29,8 +29,7 @@ Thumbs.db
 *.swp
 *.swo
 
-# Prisma
-server/prisma/migrations/
+# Prisma migrations tracked intentionally
 
 # TypeScript cache
 *.tsbuildinfo
