@@ -107,7 +107,7 @@ model Vehicle {
   notes           String?
 
   // Relations
-  currentDriverId String?
+  currentDriverId String?             @unique
   currentDriver   Driver?             @relation("CurrentVehicle", fields: [currentDriverId], references: [id])
   trips           Trip[]
   maintenanceRecords MaintenanceRecord[]
