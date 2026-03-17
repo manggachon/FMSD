@@ -1,0 +1,103 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (e.g. 1.0.0)'
+        required: true
+        type: string
+      release_notes:
+        description: 'Release notes (optional)'
+        required: false
+        type: string
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Validate version format
+        run: |
+          if ! echo "${{ inputs.version }}" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "Invalid version format: ${{ inputs.version }} (expected: x.y.z)"
+            exit 1
+          fi
+          echo "Version: v${{ inputs.version }}"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Bump server version
+        run: |
+          cd server
+          npm version ${{ inputs.version }} --no-git-tag-version
+
+      - name: Bump client version
+        run: |
+          cd client
+          npm version ${{ inputs.version }} --no-git-tag-version
+
+      - name: Configure git
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Commit version bump
+        run: |
+          git add server/package.json client/package.json
+          git commit -m "chore: bump version to v${{ inputs.version }}"
+          git push origin main
+
+      - name: Create tag
+        run: |
+          git tag -a "v${{ inputs.version }}" -m "Release v${{ inputs.version }}"
+          git push origin "v${{ inputs.version }}"
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          PREV_TAG=$(git tag --sort=-version:refname | grep -v "v${{ inputs.version }}" | head -1)
+          if [ -z "$PREV_TAG" ]; then
+            CHANGES=$(git log --oneline --no-merges | head -20)
+          else
+            CHANGES=$(git log --oneline --no-merges ${PREV_TAG}..HEAD~1)
+          fi
+          echo "CHANGES<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name:     v${{ inputs.version }}
+          release_name: FMSD v${{ inputs.version }}
+          body: |
+            ## FMSD — Fleet Management System Dashboard v${{ inputs.version }}
+
+            ${{ inputs.release_notes }}
+
+            ### Changes
+            ```
+            ${{ steps.changelog.outputs.CHANGES }}
+            ```
+
+            ### Docker Images
+            ```
+            ghcr.io/manggachon/fmsd-server:v${{ inputs.version }}
+            ghcr.io/manggachon/fmsd-client:v${{ inputs.version }}
+            ```
+          draft: false
+          prerelease: false

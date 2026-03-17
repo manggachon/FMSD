@@ -1,0 +1,51 @@
+name: Update Production Environment
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "yes" to confirm updating production .env on 192.168.1.149'
+        required: true
+        type: string
+
+jobs:
+  update-env:
+    name: Push .env to 192.168.1.149
+    runs-on: ubuntu-latest
+    if: github.event.inputs.confirm == 'yes'
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Update .env on production server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host:     ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          port:     22
+          script: |
+            mkdir -p C:/opt/fmsd
+            cat > C:/opt/fmsd/.env << 'ENVEOF'
+            POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            ADMIN_USERNAME=admin
+            ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}
+            CORS_ORIGIN=${{ vars.CORS_ORIGIN || 'http://192.168.1.149:5174,http://localhost:5174' }}
+            DB_DATA_PATH=C:\opt\fmsd\postgresql
+            DB_BACKUP_PATH=C:\opt\fmsd\backup
+            GITHUB_OWNER=${{ github.repository_owner }}
+            TELEGRAM_BOT_TOKEN=${{ secrets.DEPLOY_NOTIFY_BOT_TOKEN }}
+            TELEGRAM_ALERT_CHAT=${{ secrets.DEPLOY_NOTIFY_CHAT_ID }}
+            ENVEOF
+            echo "Environment updated on 192.168.1.149"
+
+      - name: Copy docker-compose.yml to production server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host:     ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          source:   "docker-compose.yml"
+          target:   "C:/opt/fmsd/"
