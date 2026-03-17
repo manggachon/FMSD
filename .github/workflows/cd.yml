@@ -87,14 +87,21 @@ jobs:
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+          GHCR_USER:  ${{ github.repository_owner }}
         with:
           host:     ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           password: ${{ secrets.VPS_PASSWORD }}
           port:     22
+          envs:     GHCR_TOKEN,GHCR_USER
           script: |
             set -e
             cd /opt/fmsd
+
+            echo "Login to GHCR..."
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
 
             echo "Pulling latest images..."
             docker compose pull
