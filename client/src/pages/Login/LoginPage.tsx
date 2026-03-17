@@ -30,9 +30,9 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-primary-600 rounded-2xl flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">
-            A
+            G
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">ASIOS</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Go2Win-FMSD</h1>
           <p className="text-gray-500 text-sm mt-1">ระบบบริหารจัดการยานพาหนะ</p>
         </div>
 
