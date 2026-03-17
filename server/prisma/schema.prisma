@@ -1,0 +1,224 @@
+// ASIOS Fleet Management System - Database Schema
+// PostgreSQL + Prisma ORM
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ===========================
+// ENUMS
+// ===========================
+
+enum Role {
+  ADMIN
+  MANAGER
+  DRIVER
+  MECHANIC
+  VIEWER
+}
+
+enum VehicleStatus {
+  AVAILABLE
+  IN_USE
+  MAINTENANCE
+  INACTIVE
+}
+
+enum VehicleType {
+  CAR
+  VAN
+  TRUCK
+  MOTORCYCLE
+  BUS
+}
+
+enum FuelType {
+  GASOLINE
+  DIESEL
+  ELECTRIC
+  HYBRID
+}
+
+enum DriverStatus {
+  ACTIVE
+  INACTIVE
+  ON_LEAVE
+  SUSPENDED
+}
+
+enum TripStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum MaintenanceType {
+  ROUTINE
+  REPAIR
+  INSPECTION
+  EMERGENCY
+}
+
+enum MaintenanceStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+// ===========================
+// MODELS
+// ===========================
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      Role     @default(VIEWER)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+  @@map("users")
+}
+
+model Vehicle {
+  id              String        @id @default(cuid())
+  licensePlate    String        @unique
+  brand           String
+  model           String
+  year            Int
+  color           String?
+  vehicleType     VehicleType
+  fuelType        FuelType
+  mileage         Int           @default(0)
+  status          VehicleStatus @default(AVAILABLE)
+  insuranceExpiry DateTime?
+  taxExpiry       DateTime?
+  imageUrl        String?
+  notes           String?
+
+  // Relations
+  currentDriverId String?             @unique
+  currentDriver   Driver?             @relation("CurrentVehicle", fields: [currentDriverId], references: [id])
+  trips           Trip[]
+  maintenanceRecords MaintenanceRecord[]
+  fuelRecords     FuelRecord[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([vehicleType])
+  @@map("vehicles")
+}
+
+model Driver {
+  id             String       @id @default(cuid())
+  employeeId     String       @unique
+  name           String
+  phone          String
+  email          String?      @unique
+  licenseNumber  String       @unique
+  licenseType    String
+  licenseExpiry  DateTime
+  address        String?
+  status         DriverStatus @default(ACTIVE)
+  imageUrl       String?
+
+  // Relations
+  currentVehicle Vehicle? @relation("CurrentVehicle")
+  trips          Trip[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([licenseExpiry])
+  @@map("drivers")
+}
+
+model Trip {
+  id             String     @id @default(cuid())
+  origin         String
+  destination    String
+  purpose        String?
+  status         TripStatus @default(SCHEDULED)
+  scheduledStart DateTime
+  startTime      DateTime?
+  endTime        DateTime?
+  startMileage   Int?
+  endMileage     Int?
+  distance       Float?     // km
+  fuelUsed       Float?     // liters
+  notes          String?
+
+  // Relations
+  vehicleId String
+  vehicle   Vehicle @relation(fields: [vehicleId], references: [id])
+  driverId  String
+  driver    Driver  @relation(fields: [driverId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([vehicleId])
+  @@index([driverId])
+  @@index([status])
+  @@index([startTime])
+  @@map("trips")
+}
+
+model MaintenanceRecord {
+  id              String            @id @default(cuid())
+  type            MaintenanceType
+  description     String
+  status          MaintenanceStatus @default(SCHEDULED)
+  scheduledDate   DateTime
+  completedDate   DateTime?
+  estimatedCost   Float?
+  actualCost      Float?
+  serviceProvider String?
+  notes           String?
+
+  // Relations
+  vehicleId String
+  vehicle   Vehicle @relation(fields: [vehicleId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([vehicleId])
+  @@index([status])
+  @@index([scheduledDate])
+  @@map("maintenance_records")
+}
+
+model FuelRecord {
+  id          String   @id @default(cuid())
+  liters      Float
+  pricePerLiter Float
+  totalCost   Float
+  mileage     Int
+  station     String?
+  notes       String?
+  date        DateTime @default(now())
+
+  // Relations
+  vehicleId String
+  vehicle   Vehicle @relation(fields: [vehicleId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([vehicleId])
+  @@index([date])
+  @@map("fuel_records")
+}
