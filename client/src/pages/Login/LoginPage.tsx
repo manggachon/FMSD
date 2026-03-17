@@ -29,11 +29,12 @@ export default function LoginPage() {
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-primary-600 rounded-2xl flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">
-            G
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900">Go2Win-FMSD</h1>
-          <p className="text-gray-500 text-sm mt-1">ระบบบริหารจัดการยานพาหนะ</p>
+          <img
+            src="/logo.svg"
+            alt="Go2Win-FMSD"
+            className="h-20 mx-auto mb-3 drop-shadow-sm"
+          />
+          <p className="text-gray-500 text-sm mt-1">Fleet Management System Dashboard</p>
         </div>
 
         {/* Form */}
